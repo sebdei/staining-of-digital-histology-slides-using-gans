@@ -4,6 +4,7 @@ import sys
 import ntpath
 import time
 from . import util, html
+import torch
 from subprocess import Popen, PIPE
 
 
@@ -32,11 +33,8 @@ def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256):
     webpage.add_header(name)
     ims, txts, links = [], [], []
 
-    print()
     for label, im_data in visuals.items():
-        print('ja moin')
-        print(im_data)
-        im = util.tensor2im(im_data)
+        im = util.tensor2im(im_data) if torch.is_tensor(im_data) else im_data
         image_name = '%s_%s.png' % (name, label)
         save_path = os.path.join(image_dir, image_name)
         util.save_image(im, save_path, aspect_ratio=aspect_ratio)
@@ -102,9 +100,6 @@ class Visualizer():
         Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
 
     def display_current_results(self, visuals, epoch, save_result):
-        print(visuals)
-
-        raise ""
         """Display current results on visdom; save current results to an HTML file.
 
         Parameters:
@@ -168,7 +163,6 @@ class Visualizer():
             self.saved = True
             # save images to the disk
             for label, image in visuals.items():
-                print('image')
                 image_numpy = util.tensor2im(image)
                 img_path = os.path.join(
                     self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))

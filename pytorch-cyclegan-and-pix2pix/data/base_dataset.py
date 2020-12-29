@@ -87,7 +87,9 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
     if grayscale:
         transform_list.append(transforms.Grayscale(1))
     elif opt.color_space_mode == 'HSV':
-        transform_list.append(transforms.Lambda(lambda img: rgb2hsv(img)))
+        transform_list.append(transforms.Lambda(lambda img: __rgb2hsv(img)))
+    elif opt.color_space_mode == 'LAB':
+        transform_list.append(transforms.Lambda(lambda img: __rgb2lab(img)))
 
     if 'resize' in opt.preprocess:
         osize = [opt.load_size, opt.load_size]
@@ -117,11 +119,11 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
     if convert:
         transform_list += [transforms.ToTensor()]
 
-        # if grayscale:
-        #     transform_list += [transforms.Normalize((0.5,), (0.5,))]
-        # else:
-        #     transform_list += [transforms.Normalize(
-        #         (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        if grayscale:
+            transform_list += [transforms.Normalize((0.5,), (0.5,))]
+        else:
+            transform_list += [transforms.Normalize(
+                (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
 
     return transforms.Compose(transform_list)
 
@@ -171,8 +173,15 @@ def __print_size_warning(ow, oh, w, h):
         __print_size_warning.has_printed = True
 
 
-def rgb2hsv(input):
-    open_cv_image = np.array(input, dtype=np.uint8)
-    open_cv_imagehsv = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2HSV)
+def __rgb2hsv(rgb):
+    image = np.array(rgb, dtype=np.uint8)
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
 
-    return Image.fromarray(open_cv_imagehsv)
+    return Image.fromarray(hsv)
+
+
+def __rgb2lab(rgb):
+    image = np.array(rgb, dtype=np.uint8)
+    lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+
+    return Image.fromarray(lab)

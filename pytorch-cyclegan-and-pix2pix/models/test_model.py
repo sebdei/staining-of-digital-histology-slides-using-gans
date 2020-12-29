@@ -3,11 +3,6 @@ from . import networks
 import cv2
 from PIL import Image
 
-import numpy as np
-import torch
-import cv2
-import time
-
 
 class TestModel(BaseModel):
     """ This TesteModel can be used to generate CycleGAN results for only one direction.
@@ -77,53 +72,3 @@ class TestModel(BaseModel):
     def optimize_parameters(self):
         """No optimization for test model."""
         pass
-
-    def compute_visuals(self):
-        if (self.opt.color_space_mode == 'LAB'):
-            self.real = self.lab2rgb(self.real)
-            self.fake = self.lab2rgb(self.fake)
-        elif (self.opt.color_space_mode == 'HSV'):
-            self.real = self.hsv2rgb(self.real)
-            self.fake = self.hsv2rgb(self.fake, False)
-
-    def hsv2rgb(self, hsv, real=True):
-        image = hsv.squeeze(0).permute((1, 2, 0)).cpu().numpy()
-
-        h, s, v = image[:, :, 0], image[:, :, 1], image[:, :, 2]
-        h = h * 255
-        s = s * 255
-        v = v * 255
-
-        image = cv2.merge((h, s, v))
-        image = image.astype(np.uint8)
-
-        rgb = cv2.cvtColor(image, cv2.COLOR_HSV2RGB)
-
-        if (real):
-            cv2.imwrite("result.jpg", rgb)
-
-        r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
-
-        r = r / 255
-        g = g / 255
-        b = b / 255
-
-        rgb = cv2.merge((b, g, r))
-
-        tensor = torch.from_numpy(rgb)
-        result = tensor.permute(2, 0, 1).unsqueeze(0)
-
-        return result
-
-    def lab2rgb(self, tensor):
-        # TODO
-        image = tensor.cpu()[0].permute(1, 2, 0).numpy()
-
-        image = Image.fromarray((image * 255).astype(np.uint8))
-        image = np.array(image)
-
-        image = cv2.cvtColor(image, cv2.COLOR_LAB2RGB)
-
-        result = torch.from_numpy(image)
-
-        return result.permute(2, 0, 1).unsqueeze(0)
