@@ -3,8 +3,8 @@
                batch_size: 1                             
           checkpoints_dir: ./checkpoints                 
          color_space_mode: HSV                           	[default: None]
-                crop_size: 412                           	[default: 256]
-                 dataroot: ./datasets/dev_data/testA     	[default: None]
+                crop_size: 256                           
+                 dataroot: ./datasets/dev_data/hallo/    	[default: None]
              dataset_mode: single                        
                 direction: AtoB                          
           display_winsize: 256                           
@@ -16,7 +16,7 @@
                  input_nc: 3                             
                   isTrain: False                         	[default: None]
                 load_iter: 0                             	[default: 0]
-                load_size: 738                           	[default: 256]
+                load_size: 768                           	[default: 256]
          max_dataset_size: inf                           
                     model: test                          
              model_suffix: _A                            	[default: ]

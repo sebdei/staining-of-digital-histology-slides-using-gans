@@ -52,6 +52,9 @@ if __name__ == '__main__':
         # update learning rates in the beginning of every epoch.
         model.update_learning_rate()
         for i, data in enumerate(dataset):  # inner loop within one epoch
+
+            print(data['A'].shape)
+            raise ""
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time

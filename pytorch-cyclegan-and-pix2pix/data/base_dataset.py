@@ -9,6 +9,9 @@ from PIL import Image
 import torchvision.transforms as transforms
 from abc import ABC, abstractmethod
 import torch
+import cv2
+import numpy as np
+import time
 
 
 class BaseDataset(data.Dataset, ABC):
@@ -83,6 +86,9 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
     transform_list = []
     if grayscale:
         transform_list.append(transforms.Grayscale(1))
+    elif opt.color_space_mode == 'HSV':
+        transform_list.append(transforms.Lambda(lambda img: rgb2hsv(img)))
+
     if 'resize' in opt.preprocess:
         osize = [opt.load_size, opt.load_size]
         transform_list.append(transforms.Resize(osize, method))
@@ -111,14 +117,11 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
     if convert:
         transform_list += [transforms.ToTensor()]
 
-        if grayscale:
-            transform_list += [transforms.Normalize((0.5,), (0.5,))]
-        else:
-            transform_list += [transforms.Normalize(
-                (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-
-    if opt.color_space_mode == 'HSV':
-        transform_list.append(transforms.Lambda(lambda img: rgb2hsv(img)))
+        # if grayscale:
+        #     transform_list += [transforms.Normalize((0.5,), (0.5,))]
+        # else:
+        #     transform_list += [transforms.Normalize(
+        #         (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
 
     return transforms.Compose(transform_list)
 
@@ -168,27 +171,8 @@ def __print_size_warning(ow, oh, w, h):
         __print_size_warning.has_printed = True
 
 
-def rgb2hsv(input, epsilon=1e-10):
-    input = input.unsqueeze(0)
-    assert(input.shape[1] == 3)
+def rgb2hsv(input):
+    open_cv_image = np.array(input, dtype=np.uint8)
+    open_cv_imagehsv = cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2HSV)
 
-    r, g, b = input[:, 0], input[:, 1], input[:, 2]
-    max_rgb, argmax_rgb = input.max(1)
-    min_rgb, argmin_rgb = input.min(1)
-
-    max_min = max_rgb - min_rgb + epsilon
-
-    h1 = 60.0 * (g - r) / max_min + 60.0
-    h2 = 60.0 * (b - g) / max_min + 180.0
-    h3 = 60.0 * (r - b) / max_min + 300.0
-
-    h = torch.stack((h2, h3, h1), dim=0).gather(
-        dim=0, index=argmin_rgb.unsqueeze(0)).squeeze(0)
-    s = max_min / (max_rgb + epsilon)
-    v = max_rgb
-
-    return torch.stack((h, s, v), dim=1).squeeze(0)
-
-
-# def rgb2hsv(img):
-#     return img.convert('HSV')
+    return Image.fromarray(open_cv_imagehsv)

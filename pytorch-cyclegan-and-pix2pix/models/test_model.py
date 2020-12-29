@@ -5,6 +5,8 @@ from PIL import Image
 
 import numpy as np
 import torch
+import cv2
+import time
 
 
 class TestModel(BaseModel):
@@ -82,31 +84,36 @@ class TestModel(BaseModel):
             self.fake = self.lab2rgb(self.fake)
         elif (self.opt.color_space_mode == 'HSV'):
             self.real = self.hsv2rgb(self.real)
-            self.fake = self.hsv2rgb(self.fake)
+            self.fake = self.hsv2rgb(self.fake, False)
 
-    def hsv2rgb(self, input):
-        assert(input.shape[1] == 3)
+    def hsv2rgb(self, hsv, real=True):
+        image = hsv.squeeze(0).permute((1, 2, 0)).cpu().numpy()
 
-        h, s, v = input[:, 0], input[:, 1], input[:, 2]
-        h_ = (h - torch.floor(h / 360) * 360) / 60
-        c = s * v
-        x = c * (1 - torch.abs(torch.fmod(h_, 2) - 1))
+        h, s, v = image[:, :, 0], image[:, :, 1], image[:, :, 2]
+        h = h * 255
+        s = s * 255
+        v = v * 255
 
-        zero = torch.zeros_like(c)
-        y = torch.stack((
-            torch.stack((c, x, zero), dim=1),
-            torch.stack((x, c, zero), dim=1),
-            torch.stack((zero, c, x), dim=1),
-            torch.stack((zero, x, c), dim=1),
-            torch.stack((x, zero, c), dim=1),
-            torch.stack((c, zero, x), dim=1),
-        ), dim=0)
+        image = cv2.merge((h, s, v))
+        image = image.astype(np.uint8)
 
-        index = torch.repeat_interleave(torch.floor(h_).unsqueeze(
-            1), 3, dim=1).unsqueeze(0).to(torch.long)
-        rgb = (y.gather(dim=0, index=index) + (v - c)).squeeze(0)
+        rgb = cv2.cvtColor(image, cv2.COLOR_HSV2RGB)
 
-        return rgb
+        if (real):
+            cv2.imwrite("result.jpg", rgb)
+
+        r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+
+        r = r / 255
+        g = g / 255
+        b = b / 255
+
+        rgb = cv2.merge((b, g, r))
+
+        tensor = torch.from_numpy(rgb)
+        result = tensor.permute(2, 0, 1).unsqueeze(0)
+
+        return result
 
     def lab2rgb(self, tensor):
         # TODO
