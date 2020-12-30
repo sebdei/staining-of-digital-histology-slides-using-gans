@@ -120,9 +120,9 @@ class BaseModel(ABC):
                 setattr(self, name, convert(getattr(self, name)))
 
     def compute_visuals(self):
-        if (self.opt.color_space_mode == 'LAB'):
+        if (self.opt.color_space == 'LAB'):
             self.convert_color_space_visuals(self.lab2rgb)
-        elif (self.opt.color_space_mode == 'HSV'):
+        elif (self.opt.color_space == 'HSV'):
             self.convert_color_space_visuals(self.hsv2rgb)
 
     def denormalize_image(self, image):

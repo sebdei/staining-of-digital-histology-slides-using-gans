@@ -86,9 +86,9 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
     transform_list = []
     if grayscale:
         transform_list.append(transforms.Grayscale(1))
-    elif opt.color_space_mode == 'HSV':
+    elif opt.color_space == 'HSV':
         transform_list.append(transforms.Lambda(lambda img: __rgb2hsv(img)))
-    elif opt.color_space_mode == 'LAB':
+    elif opt.color_space == 'LAB':
         transform_list.append(transforms.Lambda(lambda img: __rgb2lab(img)))
 
     if 'resize' in opt.preprocess:

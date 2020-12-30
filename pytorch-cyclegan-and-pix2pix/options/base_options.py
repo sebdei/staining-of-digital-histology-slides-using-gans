@@ -21,7 +21,7 @@ class BaseOptions():
         """Define the common options that are used in both training and test."""
 
         # customized params
-        parser.add_argument('--color_space_mode',
+        parser.add_argument('--color_space',
                             help='color space mode eg LAB|HSV|RGB')
 
         # basic parameters
