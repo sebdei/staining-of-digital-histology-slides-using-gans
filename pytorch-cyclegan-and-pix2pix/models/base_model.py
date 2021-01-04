@@ -124,6 +124,8 @@ class BaseModel(ABC):
             self.convert_color_space_visuals(self.lab2rgb)
         elif (self.opt.color_space == 'HSV'):
             self.convert_color_space_visuals(self.hsv2rgb)
+        else:
+            self.convert_color_space_visuals(self.bgr2rgb)
 
     def denormalize_image(self, image):
         mean = 0.5
@@ -163,6 +165,20 @@ class BaseModel(ABC):
         image = image.astype(np.uint8)
 
         return cv2.cvtColor(image, cv2.COLOR_LAB2RGB)
+
+    def bgr2rgb(self, bgr):
+        image = bgr.squeeze(0).permute((1, 2, 0)).detach().cpu().numpy()
+        image = self.denormalize_image(image)
+
+        b, g, r = image[:, :, 0], image[:, :, 1], image[:, :, 2]
+        b = b * 255
+        g = g * 255
+        r = r * 255
+
+        image = cv2.merge((b, g, r))
+        image = image.astype(np.uint8)
+
+        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     def get_image_paths(self):
         """ Return image paths that are used to load current data"""
