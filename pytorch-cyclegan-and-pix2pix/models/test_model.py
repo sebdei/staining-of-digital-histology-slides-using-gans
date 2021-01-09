@@ -1,5 +1,8 @@
 from .base_model import BaseModel
 from . import networks
+import cv2
+from PIL import Image
+import numpy as np
 
 
 class TestModel(BaseModel):
@@ -24,7 +27,8 @@ class TestModel(BaseModel):
         """
         assert not is_train, 'TestModel cannot be used during training time'
         parser.set_defaults(dataset_mode='single')
-        parser.add_argument('--model_suffix', type=str, default='', help='In checkpoints_dir, [epoch]_net_G[model_suffix].pth will be loaded as the generator.')
+        parser.add_argument('--model_suffix', type=str, default='',
+                            help='In checkpoints_dir, [epoch]_net_G[model_suffix].pth will be loaded as the generator.')
 
         return parser
 
@@ -39,15 +43,48 @@ class TestModel(BaseModel):
         # specify the training losses you want to print out. The training/test scripts  will call <BaseModel.get_current_losses>
         self.loss_names = []
         # specify the images you want to save/display. The training/test scripts  will call <BaseModel.get_current_visuals>
-        self.visual_names = ['real', 'fake']
+        self.visual_names = ['real', 'real_B', 'fake']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
-        self.model_names = ['G' + opt.model_suffix]  # only generator is needed.
+        # only generator is needed.
+        self.model_names = ['G' + opt.model_suffix]
         self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf, opt.netG,
                                       opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
         # assigns the model to self.netG_[suffix] so that it can be loaded
         # please see <BaseModel.load_networks>
-        setattr(self, 'netG' + opt.model_suffix, self.netG)  # store netG in self.
+        # store netG in self.
+        setattr(self, 'netG' + opt.model_suffix, self.netG)
+
+    def evaluate(self):
+        img_real_hsv = cv2.cvtColor(self.real_B, cv2.COLOR_BGR2HSV)
+        img_fake_hsv = cv2.cvtColor(self.fake, cv2.COLOR_BGR2HSV)
+
+        upper_brown = np.array([25, 255, 155], dtype=np.uint8)
+        lower_brown = np.array([1, 1, 1], dtype=np.uint8)
+
+        mask_real = cv2.inRange(img_real_hsv, lower_brown, upper_brown)
+        mask_fake = cv2.inRange(img_fake_hsv, lower_brown, upper_brown)
+
+        mask_real = mask_real.flatten()
+        mask_fake = mask_fake.flatten()
+
+        mask_real[mask_real > 0] = 1
+        mask_fake[mask_fake > 0] = 1
+
+        from sklearn.metrics import confusion_matrix
+        confusion_matrix = confusion_matrix(
+            mask_real, mask_fake, labels=[0, 1])
+
+        TN, FP, FN, TP = confusion_matrix.ravel()
+
+        acc = (TP + TN) / (TP + TN + FP + FN)
+        precision = 0 if (TP + FP) == 0 else TP / (TP + FP)
+        recall = 0 if (TP + FN) == 0 else TP / (TP + FN)
+
+        f1 = 0 if (precision + recall) == 0 else (2 *
+                                                  precision * recall) / (precision + recall)
+
+        return {'acc': acc, 'f1': f1}
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
@@ -58,6 +95,7 @@ class TestModel(BaseModel):
         We need to use 'single_dataset' dataset mode. It only load images from one domain.
         """
         self.real = input['A'].to(self.device)
+        self.real_B = input['B']
         self.image_paths = input['A_paths']
 
     def forward(self):

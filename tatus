@@ -1,0 +1,115 @@
+[1mdiff --git a/pytorch-cyclegan-and-pix2pix/models/cycle_gan_model.py b/pytorch-cyclegan-and-pix2pix/models/cycle_gan_model.py[m
+[1mindex 15bb72d..ac50323 100644[m
+[1m--- a/pytorch-cyclegan-and-pix2pix/models/cycle_gan_model.py[m
+[1m+++ b/pytorch-cyclegan-and-pix2pix/models/cycle_gan_model.py[m
+[36m@@ -36,11 +36,15 @@[m [mclass CycleGANModel(BaseModel):[m
+         Identity loss (optional): lambda_identity * (||G_A(B) - B|| * lambda_B + ||G_B(A) - A|| * lambda_A) (Sec 5.2 "Photo generation from paintings" in the paper)[m
+         Dropout is not used in the original CycleGAN paper.[m
+         """[m
+[31m-        parser.set_defaults(no_dropout=True)  # default CycleGAN did not use dropout[m
+[32m+[m[32m        parser.set_defaults([m
+[32m+[m[32m            no_dropout=True)  # default CycleGAN did not use dropout[m
+         if is_train:[m
+[31m-            parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')[m
+[31m-            parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')[m
+[31m-            parser.add_argument('--lambda_identity', type=float, default=0.5, help='use identity mapping. Setting lambda_identity other than 0 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set lambda_identity = 0.1')[m
+[32m+[m[32m            parser.add_argument('--lambda_A', type=float, default=10.0,[m
+[32m+[m[32m                                help='weight for cycle loss (A -> B -> A)')[m
+[32m+[m[32m            parser.add_argument('--lambda_B', type=float, default=10.0,[m
+[32m+[m[32m                                help='weight for cycle loss (B -> A -> B)')[m
+[32m+[m[32m            parser.add_argument('--lambda_identity', type=float, default=0.5,[m
+[32m+[m[32m                                help='use identity mapping. Setting lambda_identity other than 0 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set lambda_identity = 0.1')[m
+ [m
+         return parser[m
+ [m
+[36m@@ -52,15 +56,18 @@[m [mclass CycleGANModel(BaseModel):[m
+         """[m
+         BaseModel.__init__(self, opt)[m
+         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>[m
+[31m-        self.loss_names = ['D_A', 'G_A', 'cycle_A', 'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B'][m
+[32m+[m[32m        self.loss_names = ['D_A', 'G_A', 'cycle_A',[m
+[32m+[m[32m                           'idt_A', 'D_B', 'G_B', 'cycle_B', 'idt_B'][m
+         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>[m
+         visual_names_A = ['real_A', 'fake_B', 'rec_A'][m
+         visual_names_B = ['real_B', 'fake_A', 'rec_B'][m
+[31m-        if self.isTrain and self.opt.lambda_identity > 0.0:  # if identity loss is used, we also visualize idt_B=G_A(B) ad idt_A=G_A(B)[m
+[32m+[m[32m        # if identity loss is used, we also visualize idt_B=G_A(B) ad idt_A=G_A(B)[m
+[32m+[m[32m        if self.isTrain and self.opt.lambda_identity > 0.0:[m
+             visual_names_A.append('idt_B')[m
+             visual_names_B.append('idt_A')[m
+ [m
+[31m-        self.visual_names = visual_names_A + visual_names_B  # combine visualizations for A and B[m
+[32m+[m[32m        # combine visualizations for A and B[m
+[32m+[m[32m        self.visual_names = visual_names_A + visual_names_B[m
+         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>.[m
+         if self.isTrain:[m
+             self.model_names = ['G_A', 'G_B', 'D_A', 'D_B'][m
+[36m@@ -84,15 +91,20 @@[m [mclass CycleGANModel(BaseModel):[m
+         if self.isTrain:[m
+             if opt.lambda_identity > 0.0:  # only works when input and output images have the same number of channels[m
+                 assert(opt.input_nc == opt.output_nc)[m
+[31m-            self.fake_A_pool = ImagePool(opt.pool_size)  # create image buffer to store previously generated images[m
+[31m-            self.fake_B_pool = ImagePool(opt.pool_size)  # create image buffer to store previously generated images[m
+[32m+[m[32m            # create image buffer to store previously generated images[m
+[32m+[m[32m            self.fake_A_pool = ImagePool(opt.pool_size)[m
+[32m+[m[32m            # create image buffer to store previously generated images[m
+[32m+[m[32m            self.fake_B_pool = ImagePool(opt.pool_size)[m
+             # define loss functions[m
+[31m-            self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)  # define GAN loss.[m
+[32m+[m[32m            # define GAN loss.[m
+[32m+[m[32m            self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)[m
+             self.criterionCycle = torch.nn.L1Loss()[m
+             self.criterionIdt = torch.nn.L1Loss()[m
+             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.[m
+[31m-            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))[m
+[31m-            self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))[m
+[32m+[m[32m            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters([m
+[32m+[m[32m            ), self.netG_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))[m
+[32m+[m[32m            self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters([m
+[32m+[m[32m            ), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))[m
+             self.optimizers.append(self.optimizer_G)[m
+             self.optimizers.append(self.optimizer_D)[m
+ [m
+[36m@@ -157,10 +169,12 @@[m [mclass CycleGANModel(BaseModel):[m
+         if lambda_idt > 0:[m
+             # G_A should be identity if real_B is fed: ||G_A(B) - B||[m
+             self.idt_A = self.netG_A(self.real_B)[m
+[31m-            self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt[m
+[32m+[m[32m            self.loss_idt_A = self.criterionIdt([m
+[32m+[m[32m                self.idt_A, self.real_B) * lambda_B * lambda_idt[m
+             # G_B should be identity if real_A is fed: ||G_B(A) - A||[m
+             self.idt_B = self.netG_B(self.real_A)[m
+[31m-            self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt[m
+[32m+[m[32m            self.loss_idt_B = self.criterionIdt([m
+[32m+[m[32m                self.idt_B, self.real_A) * lambda_A * lambda_idt[m
+         else:[m
+             self.loss_idt_A = 0[m
+             self.loss_idt_B = 0[m
+[36m@@ -170,11 +184,14 @@[m [mclass CycleGANModel(BaseModel):[m
+         # GAN loss D_B(G_B(B))[m
+         self.loss_G_B = self.criterionGAN(self.netD_B(self.fake_A), True)[m
+         # Forward cycle loss || G_B(G_A(A)) - A||[m
+[31m-        self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A[m
+[32m+[m[32m        self.loss_cycle_A = self.criterionCycle([m
+[32m+[m[32m            self.rec_A, self.real_A) * lambda_A[m
+         # Backward cycle loss || G_A(G_B(B)) - B||[m
+[31m-        self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B[m
+[32m+[m[32m        self.loss_cycle_B = self.criterionCycle([m
+[32m+[m[32m            self.rec_B, self.real_B) * lambda_B[m
+         # combined loss and calculate gradients[m
+[31m-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B[m
+[32m+[m[32m        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + \[m
+[32m+[m[32m            self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B[m
+         self.loss_G.backward()[m
+ [m
+     def optimize_parameters(self):[m
+[36m@@ -182,7 +199,8 @@[m [mclass CycleGANModel(BaseModel):[m
+         # forward[m
+         self.forward()      # compute fake images and reconstruction images.[m
+         # G_A and G_B[m
+[31m-        self.set_requires_grad([self.netD_A, self.netD_B], False)  # Ds require no gradients when optimizing Gs[m
+[32m+[m[32m        # Ds require no gradients when optimizing Gs[m
+[32m+[m[32m        self.set_requires_grad([self.netD_A, self.netD_B], False)[m
+         self.optimizer_G.zero_grad()  # set G_A and G_B's gradients to zero[m
+         self.backward_G()             # calculate gradients for G_A and G_B[m
+         self.optimizer_G.step()       # update G_A and G_B's weights[m

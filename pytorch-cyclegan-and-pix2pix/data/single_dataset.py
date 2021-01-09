@@ -1,6 +1,8 @@
 from data.base_dataset import BaseDataset, get_transform
 from data.image_folder import make_dataset
 from PIL import Image
+import cv2
+import numpy as np
 
 
 class SingleDataset(BaseDataset):
@@ -31,8 +33,10 @@ class SingleDataset(BaseDataset):
             A_paths(str) - - the path of the image
         """
         A_path = self.A_paths[index]
+
         A_img = Image.open(A_path).convert('RGB')
         A = self.transform(A_img)
+
         return {'A': A, 'A_paths': A_path}
 
     def __len__(self):

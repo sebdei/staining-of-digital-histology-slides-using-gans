@@ -8,6 +8,10 @@ import torch.utils.data as data
 from PIL import Image
 import torchvision.transforms as transforms
 from abc import ABC, abstractmethod
+import torch
+import cv2
+import numpy as np
+import time
 
 
 class BaseDataset(data.Dataset, ABC):
@@ -82,33 +86,45 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
     transform_list = []
     if grayscale:
         transform_list.append(transforms.Grayscale(1))
+    elif opt.color_space == 'HSV':
+        transform_list.append(transforms.Lambda(lambda img: __rgb2hsv(img)))
+    elif opt.color_space == 'LAB':
+        transform_list.append(transforms.Lambda(lambda img: __rgb2lab(img)))
+
     if 'resize' in opt.preprocess:
         osize = [opt.load_size, opt.load_size]
         transform_list.append(transforms.Resize(osize, method))
     elif 'scale_width' in opt.preprocess:
-        transform_list.append(transforms.Lambda(lambda img: __scale_width(img, opt.load_size, opt.crop_size, method)))
+        transform_list.append(transforms.Lambda(
+            lambda img: __scale_width(img, opt.load_size, opt.crop_size, method)))
 
     if 'crop' in opt.preprocess:
         if params is None:
             transform_list.append(transforms.RandomCrop(opt.crop_size))
         else:
-            transform_list.append(transforms.Lambda(lambda img: __crop(img, params['crop_pos'], opt.crop_size)))
+            transform_list.append(transforms.Lambda(
+                lambda img: __crop(img, params['crop_pos'], opt.crop_size)))
 
     if opt.preprocess == 'none':
-        transform_list.append(transforms.Lambda(lambda img: __make_power_2(img, base=4, method=method)))
+        transform_list.append(transforms.Lambda(
+            lambda img: __make_power_2(img, base=4, method=method)))
 
     if not opt.no_flip:
         if params is None:
             transform_list.append(transforms.RandomHorizontalFlip())
         elif params['flip']:
-            transform_list.append(transforms.Lambda(lambda img: __flip(img, params['flip'])))
+            transform_list.append(transforms.Lambda(
+                lambda img: __flip(img, params['flip'])))
 
     if convert:
         transform_list += [transforms.ToTensor()]
+
         if grayscale:
             transform_list += [transforms.Normalize((0.5,), (0.5,))]
         else:
-            transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+            transform_list += [transforms.Normalize(
+                (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+
     return transforms.Compose(transform_list)
 
 
@@ -155,3 +171,17 @@ def __print_size_warning(ow, oh, w, h):
               "(%d, %d). This adjustment will be done to all images "
               "whose sizes are not multiples of 4" % (ow, oh, w, h))
         __print_size_warning.has_printed = True
+
+
+def __rgb2hsv(rgb):
+    image = np.array(rgb, dtype=np.uint8)
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+
+    return Image.fromarray(hsv)
+
+
+def __rgb2lab(rgb):
+    image = np.array(rgb, dtype=np.uint8)
+    lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+
+    return Image.fromarray(lab)
