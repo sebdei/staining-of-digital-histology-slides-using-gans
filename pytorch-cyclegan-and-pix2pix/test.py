@@ -26,12 +26,47 @@ See options/base_options.py and options/test_options.py for more test options.
 See training and test tips at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/tips.md
 See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/qa.md
 """
+import csv
 import os
 from options.test_options import TestOptions
 from data import create_dataset
 from models import create_model
 from util.visualizer import save_images
 from util import html
+
+
+def init_metrics():
+    return {'acc': 0, 'f1': 0, 'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0}
+
+
+def add_metrics(old_metrics, new_metrics):
+    result = {}
+
+    for key in old_metrics.keys():
+        result[key] = old_metrics[key] + new_metrics[key]
+
+    return result
+
+
+def assure_csv(path, header):
+    if not os.path.exists(path):
+        with open(path, 'w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=header)
+            writer.writeheader()
+
+
+def append_to_csv(metrics, opt):
+    row = metrics
+    row['epoch'] = opt.epoch
+    row['dataset'] = opt.dataset.split()[-1]
+
+    header = row.keys()
+    path = f"./evaluation/{opt.name}.csv"
+    assure_csv(path, header)
+
+    with open(path, "a", newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writerow(row)
 
 
 if __name__ == '__main__':
@@ -65,6 +100,8 @@ if __name__ == '__main__':
     if opt.eval:
         model.eval()
 
+    current_metrics = init_metrics()
+
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
             break
@@ -72,14 +109,15 @@ if __name__ == '__main__':
         model.test()           # run inference
         visuals = model.get_current_visuals()  # get image results
 
-        ##
-        metrics = model.evaluate()
-        print(metrics)
-        ##
+        new_metrics = model.evaluate()
+        current_metrics = add_metrics(current_metrics, new_metrics)
 
         img_path = model.get_image_paths()     # get image paths
         if i % 5 == 0:  # save images to an HTML file
             print('processing (%04d)-th image... %s' % (i, img_path))
         save_images(webpage, visuals, img_path,
                     aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
+
+    append_to_csv(current_metrics, opt)
+
     webpage.save()  # save the HTML

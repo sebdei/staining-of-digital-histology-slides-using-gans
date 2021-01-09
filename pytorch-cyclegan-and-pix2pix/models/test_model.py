@@ -84,7 +84,7 @@ class TestModel(BaseModel):
         f1 = 0 if (precision + recall) == 0 else (2 *
                                                   precision * recall) / (precision + recall)
 
-        return {'acc': acc, 'f1': f1}
+        return {'acc': acc, 'f1': f1, 'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN}
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
