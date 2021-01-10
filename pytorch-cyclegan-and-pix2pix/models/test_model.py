@@ -77,14 +77,7 @@ class TestModel(BaseModel):
 
         TN, FP, FN, TP = confusion_matrix.ravel()
 
-        acc = (TP + TN) / (TP + TN + FP + FN)
-        precision = 0 if (TP + FP) == 0 else TP / (TP + FP)
-        recall = 0 if (TP + FN) == 0 else TP / (TP + FN)
-
-        f1 = 0 if (precision + recall) == 0 else (2 *
-                                                  precision * recall) / (precision + recall)
-
-        return {'acc': acc, 'f1': f1, 'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN}
+        return {'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN}
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
