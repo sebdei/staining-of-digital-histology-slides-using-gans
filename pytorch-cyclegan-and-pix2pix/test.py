@@ -36,7 +36,7 @@ from util import html
 
 
 def init_metrics():
-    return {'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0}
+    return {'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0, 'ssmi': 0}
 
 
 def sum_metrics(metrics, new_metrics):
@@ -100,6 +100,8 @@ if __name__ == '__main__':
 
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
+            # sic! ensures that num_images in the next step is consistent.
+            i = i - 1
             break
         model.set_input(data)  # unpack data from data loader
         model.test()           # run inference
@@ -113,6 +115,9 @@ if __name__ == '__main__':
             print('processing (%04d)-th image... %s' % (i, img_path))
         save_images(webpage, visuals, img_path,
                     aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
+
+    num_images = i + 1
+    metrics['ssmi'] = metrics['ssmi'] / num_images
 
     append_to_csv(metrics, opt)
 

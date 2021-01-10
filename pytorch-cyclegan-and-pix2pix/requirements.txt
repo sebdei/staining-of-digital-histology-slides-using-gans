@@ -1,3 +1,5 @@
+scikit-learn
+scikit-image
 torch>=1.4.0
 torchvision>=0.5.0
 dominate>=2.4.0
