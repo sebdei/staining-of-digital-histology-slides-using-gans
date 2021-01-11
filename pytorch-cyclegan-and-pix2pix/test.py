@@ -36,7 +36,7 @@ from util import html
 
 
 def init_metrics():
-    return {'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0, 'ssmi': 0}
+    return {'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0, 'ssim': 0}
 
 
 def sum_metrics(metrics, new_metrics):
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                     aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
 
     num_images = i + 1
-    metrics['ssmi'] = metrics['ssmi'] / num_images
+    metrics['ssim'] = metrics['ssim'] / num_images
 
     append_to_csv(metrics, opt)
 
