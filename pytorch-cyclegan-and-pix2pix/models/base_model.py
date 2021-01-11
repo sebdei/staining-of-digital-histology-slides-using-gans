@@ -175,7 +175,7 @@ class BaseModel(ABC):
         g = g * 255
         b = b * 255
 
-        image = cv2.merge((b, g, r))
+        image = cv2.merge((r, g, b))
         image = image.astype(np.uint8)
 
         return image
