@@ -77,11 +77,11 @@ class TestModel(BaseModel):
 
         TN, FP, FN, TP = confusion_matrix.ravel()
 
-        ssmi = self.calculate_ssmi(self.real_B, self.fake)
+        ssim = self.calculate_ssim(self.real_B, self.fake)
 
-        return {'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN, 'ssmi': ssmi}
+        return {'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN, 'ssim': ssim}
 
-    def calculate_ssmi(self, real_B, fake):
+    def calculate_ssim(self, real_B, fake):
         from skimage.metrics import structural_similarity
 
         score, _ = structural_similarity(
