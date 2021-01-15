@@ -6,3 +6,4 @@
 **/*.npy
 .DS_Store
 **/*.pth
+**/*.dat
