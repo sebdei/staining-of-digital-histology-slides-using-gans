@@ -36,16 +36,11 @@ from util import html
 
 
 def init_metrics():
-    return {'acc': 0, 'f1': 0, 'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0}
+    return {'TP': 0, 'FP': 0, 'FN': 0, 'TN': 0, 'ssim': 0}
 
 
-def add_metrics(old_metrics, new_metrics):
-    result = {}
-
-    for key in old_metrics.keys():
-        result[key] = old_metrics[key] + new_metrics[key]
-
-    return result
+def sum_metrics(metrics, new_metrics):
+    return {key: metrics[key] + new_metrics[key] for key in metrics.keys()}
 
 
 def assure_csv(path, header):
@@ -56,12 +51,13 @@ def assure_csv(path, header):
 
 
 def append_to_csv(metrics, opt):
-    row = metrics
-    row['epoch'] = opt.epoch
-    row['dataset'] = opt.dataset.split()[-1]
+    dimensions = {'dataset': opt.dataroot.split("/")[-1], 'epoch': opt.epoch}
+    row = {**dimensions, **metrics}
+
+    os.makedirs("evaluation", exist_ok=True)
+    path = f"./evaluation/{opt.name}.csv"
 
     header = row.keys()
-    path = f"./evaluation/{opt.name}.csv"
     assure_csv(path, header)
 
     with open(path, "a", newline='') as f:
@@ -100,17 +96,19 @@ if __name__ == '__main__':
     if opt.eval:
         model.eval()
 
-    current_metrics = init_metrics()
+    metrics = init_metrics()
 
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
+            # sic! ensures that num_images in the next step is consistent.
+            i = i - 1
             break
         model.set_input(data)  # unpack data from data loader
         model.test()           # run inference
         visuals = model.get_current_visuals()  # get image results
 
         new_metrics = model.evaluate()
-        current_metrics = add_metrics(current_metrics, new_metrics)
+        metrics = sum_metrics(metrics, new_metrics)
 
         img_path = model.get_image_paths()     # get image paths
         if i % 5 == 0:  # save images to an HTML file
@@ -118,6 +116,9 @@ if __name__ == '__main__':
         save_images(webpage, visuals, img_path,
                     aspect_ratio=opt.aspect_ratio, width=opt.display_winsize)
 
-    append_to_csv(current_metrics, opt)
+    num_images = i + 1
+    metrics['ssim'] = metrics['ssim'] / num_images
+
+    append_to_csv(metrics, opt)
 
     webpage.save()  # save the HTML

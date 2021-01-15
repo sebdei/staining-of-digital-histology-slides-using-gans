@@ -56,8 +56,8 @@ class TestModel(BaseModel):
         setattr(self, 'netG' + opt.model_suffix, self.netG)
 
     def evaluate(self):
-        img_real_hsv = cv2.cvtColor(self.real_B, cv2.COLOR_BGR2HSV)
-        img_fake_hsv = cv2.cvtColor(self.fake, cv2.COLOR_BGR2HSV)
+        img_real_hsv = cv2.cvtColor(self.real_B, cv2.COLOR_RGB2HSV)
+        img_fake_hsv = cv2.cvtColor(self.fake, cv2.COLOR_RGB2HSV)
 
         upper_brown = np.array([25, 255, 155], dtype=np.uint8)
         lower_brown = np.array([1, 1, 1], dtype=np.uint8)
@@ -77,14 +77,17 @@ class TestModel(BaseModel):
 
         TN, FP, FN, TP = confusion_matrix.ravel()
 
-        acc = (TP + TN) / (TP + TN + FP + FN)
-        precision = 0 if (TP + FP) == 0 else TP / (TP + FP)
-        recall = 0 if (TP + FN) == 0 else TP / (TP + FN)
+        ssim = self.calculate_ssim(self.real_B, self.fake)
 
-        f1 = 0 if (precision + recall) == 0 else (2 *
-                                                  precision * recall) / (precision + recall)
+        return {'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN, 'ssim': ssim}
 
-        return {'acc': acc, 'f1': f1, 'TP': TP, 'FP': FP, 'FN': FN, 'TN': TN}
+    def calculate_ssim(self, real_B, fake):
+        from skimage.metrics import structural_similarity
+
+        score, _ = structural_similarity(
+            real_B, fake, full=True, multichannel=True)
+
+        return score
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
