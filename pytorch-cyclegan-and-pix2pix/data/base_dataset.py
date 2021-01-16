@@ -90,6 +90,8 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
         transform_list.append(transforms.Lambda(lambda img: __rgb2hsv(img)))
     elif opt.color_space == 'LAB':
         transform_list.append(transforms.Lambda(lambda img: __rgb2lab(img)))
+    elif (opt.color_space == 'YCrCb'):
+        transform_list.append(transforms.Lambda(lambda img: __rgb2YCrCb(img)))
 
     if 'resize' in opt.preprocess:
         osize = [opt.load_size, opt.load_size]
@@ -185,3 +187,10 @@ def __rgb2lab(rgb):
     lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
 
     return Image.fromarray(lab)
+
+
+def __rgb2YCrCb(rgb):
+    image = np.array(rgb, dtype=np.uint8)
+    ycrcb = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
+
+    return Image.fromarray(ycrcb)

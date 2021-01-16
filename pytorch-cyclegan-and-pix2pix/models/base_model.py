@@ -124,6 +124,8 @@ class BaseModel(ABC):
             self.convert_color_space_visuals(self.lab2rgb)
         elif (self.opt.color_space == 'HSV'):
             self.convert_color_space_visuals(self.hsv2rgb)
+        elif (self.opt.color_space == 'YCrCb'):
+            self.convert_color_space_visuals(self.ycrcb2rgb)
         else:
             self.convert_color_space_visuals(self.rgb2rgb)
 
@@ -179,6 +181,20 @@ class BaseModel(ABC):
         image = image.astype(np.uint8)
 
         return image
+
+    def ycrcb2rgb(self, ycrcb):
+        image = ycrcb.squeeze(0).permute((1, 2, 0)).detach().cpu().numpy()
+        image = self.denormalize_image(image)
+
+        y, cr, cb = image[:, :, 0], image[:, :, 1], image[:, :, 2]
+        y = y * 255
+        cr = cr * 255
+        cb = cb * 255
+
+        image = cv2.merge((y, cr, cb))
+        image = image.astype(np.uint8)
+
+        return cv2.cvtColor(image, cv2.COLOR_YCrCb2RGB)
 
     def get_image_paths(self):
         """ Return image paths that are used to load current data"""
