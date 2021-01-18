@@ -55,15 +55,15 @@ def _align_size_crop(he, ihc):
     return he, ihc
 
 
-def _register_and_transform(img1, img2):
-    img1_gray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    img2_gray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+def _register_and_transform(source, target, transformation):
+    source_gray = cv2.cvtColor(source, cv2.COLOR_BGR2GRAY)
+    target_gray = cv2.cvtColor(target, cv2.COLOR_BGR2GRAY)
 
-    img1_gray = cv2.GaussianBlur(img1_gray, (5, 5), 0)
-    img2_gray = cv2.GaussianBlur(img2_gray, (5, 5), 0)
+    source_gray = cv2.GaussianBlur(source_gray, (5, 5), 0)
+    target_gray = cv2.GaussianBlur(target_gray, (5, 5), 0)
 
-    stack_reg = StackReg(StackReg.SCALED_ROTATION)
-    transformation_matrix = stack_reg.register(img1_gray, img2_gray)
+    stack_reg = StackReg(transformation)
+    transformation_matrix = stack_reg.register(source_gray, target_gray)
 
     # sic! StackReg returns a flipped transformation matrix. Hence the identity is flipped.
     invert_identity = np.array([
@@ -73,19 +73,15 @@ def _register_and_transform(img1, img2):
     ])
 
     transformation_matrix = transformation_matrix*invert_identity
-    border_value = np.average(img2[0], axis=0)
+    border_value = np.average(target[0], axis=0)
 
-    return img1, cv2.warpPerspective(img2, transformation_matrix, (img2.shape[0], img2.shape[1]),
-                                     borderValue=border_value)
+    return source, cv2.warpPerspective(target, transformation_matrix, (target.shape[0], target.shape[1]),
+                                       borderValue=border_value)
 
 
 def register_images(path_he, path_ihc):
     he_name = os.path.basename(path_he)
     ihc_name = os.path.basename(path_ihc)
-
-    print(he_name)
-    print(ihc_name)
-    print("")
 
     assert he_name[0:10] == ihc_name[0:10]
 
@@ -97,7 +93,8 @@ def register_images(path_he, path_ihc):
     assert he.shape[0] == ihc.shape[0]
     assert he.shape[1] == ihc.shape[1]
 
-    he, ihc = _register_and_transform(he, ihc)
+    he, ihc = _register_and_transform(he, ihc, StackReg.SCALED_ROTATION)
+    he, ihc = _register_and_transform(he, ihc, StackReg.RIGID_BODY)
 
     cv2.imwrite(path_he, he)
     cv2.imwrite(path_ihc, ihc)
