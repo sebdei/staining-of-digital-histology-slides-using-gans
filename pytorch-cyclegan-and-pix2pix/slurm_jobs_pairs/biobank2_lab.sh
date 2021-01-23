@@ -20,4 +20,4 @@ module load OpenCV/4.2.0-Python-3.7.4
 
 cd .. && \
 pip install --user -r requirements.txt && \
-python3 train.py --dataroot ./datasets/biobanks_pairs_train/biobank2 --name biobank2_lab_pairs --model pix2pix --load_size 1024 --crop_size 1024 --save_epoch_freq 2 --color_space LAB  --dataset_mode unaligned --serial_batches  --netG resnet_9blocks
+python3 train.py --dataroot ./datasets/biobanks_pairs_train/biobank2 --name biobank2_lab_pairs --model pix2pix --load_size 1024 --crop_size 1024 --save_epoch_freq 2 --color_space LAB --netG resnet_9blocks

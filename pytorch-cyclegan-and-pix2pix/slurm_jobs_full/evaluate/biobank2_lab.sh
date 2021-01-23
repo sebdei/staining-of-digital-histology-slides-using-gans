@@ -7,7 +7,7 @@
 #SBATCH --time=48:00:00
 #SBATCH --mem=6G 
  
-#SBATCH --job-name=biobank2_lab_full
+#SBATCH --job-name=biobank2_lab_full_evaluation
 #SBATCH --output=output/biobank2_lab_full.dat
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=sebastian.deisel@uni-muenster.de
