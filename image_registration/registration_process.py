@@ -73,7 +73,7 @@ def _register_and_transform(source, target, transformation):
     ])
 
     transformation_matrix = transformation_matrix*invert_identity
-    border_value = np.average(target[0], axis=0)
+    border_value = np.median(target[0], axis=0)
 
     return source, cv2.warpPerspective(target, transformation_matrix, (target.shape[0], target.shape[1]),
                                        borderValue=border_value)
@@ -94,6 +94,7 @@ def register_images(path_he, path_ihc):
     assert he.shape[1] == ihc.shape[1]
 
     he, ihc = _register_and_transform(he, ihc, StackReg.SCALED_ROTATION)
+    he, ihc = _register_and_transform(he, ihc, StackReg.TRANSLATION)
     he, ihc = _register_and_transform(he, ihc, StackReg.RIGID_BODY)
 
     cv2.imwrite(path_he, he)
